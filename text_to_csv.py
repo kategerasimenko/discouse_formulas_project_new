@@ -85,7 +85,6 @@ def annotate_tokens(tokens,filename):
 tokenizer = CustomizedTreebankWordTokenizer()
 morph = pymorphy2.MorphAnalyzer()
 
-razm = input('Are files annotated? [y/n]')
 delete_speakers = input('Delete speakers? [y/n]')
 
 
