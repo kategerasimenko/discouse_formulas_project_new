@@ -127,4 +127,4 @@ for filename in filenames:
         csvtarget.close()
 
 full_data = pd.concat(all_features,ignore_index=True)
-full_data.to_csv('train_data.csv')
+full_data.to_csv('train_data.csv',encoding='utf-8-sig')
