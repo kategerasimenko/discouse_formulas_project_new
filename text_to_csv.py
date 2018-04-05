@@ -1,11 +1,14 @@
 from feature_extraction import *
 from nltk.tokenize.treebank import TreebankWordTokenizer
 from nltk.tokenize import sent_tokenize
+import pandas as pd
 import pymorphy2
 import html
 import csv
 import re
 import os
+
+CONTEXT_WINDOW = (-5, 5)
 
 class CustomizedTreebankWordTokenizer():
     def __init__(self):
@@ -29,7 +32,7 @@ class CustomizedTreebankWordTokenizer():
         return [x for y in sent_tokenize(text) for x in self.tokenizer.tokenize(y)]
 
 
-def annotate_tokens(tokens):
+def annotate_tokens(tokens,filename):
     """
     POS tagging (pymorphy2)
     Target array - BILOU:
@@ -64,7 +67,7 @@ def annotate_tokens(tokens):
         token_pos = token_ana.tag.POS
         if not token_pos:
             token_pos = str(token_ana.tag).split(',')[0]
-        annotated_tokens.append((token.lower(),token_ana.normal_form,token_pos,word_num))
+        annotated_tokens.append((token.lower(),token_ana.normal_form,token_pos,word_num,filename))
         word_num += 1
         if formula:
             if not formula_length:
@@ -87,28 +90,14 @@ delete_speakers = input('Delete speakers? [y/n]')
 
 
 #открыть и закрыть файлы для записи, чтобы при новом запуске программы файл создавался с нуля, а не добавлялся к старому
-if razm == 'y':
-    csvdata = open('train_data.csv', 'w', encoding='utf-8-sig')
-    writer = csv.writer(csvdata, delimiter=';', quotechar='"', lineterminator='\n', quoting=csv.QUOTE_NONNUMERIC)
-    row0 = ['Text_id', 'Text']
-    writer.writerow(row0)
-    csvdata.close()
-
-    csvtarget = open('train_target.csv', 'w', encoding='utf-8-sig')
-    row0 = ['Target']
-    writer = csv.writer(csvtarget, delimiter=';', quotechar='"', lineterminator='\n', quoting=csv.QUOTE_NONNUMERIC)
-    writer.writerow(row0)
-    csvtarget.close()
-    
-
-else:
-    csvdata = open('test_data.csv', 'w', encoding='utf-8-sig')
-    writer = csv.writer(csvdata, delimiter=';', quotechar='"', lineterminator='\n', quoting=csv.QUOTE_NONNUMERIC)
-    row0 = ['Text_id', 'Text']
-    writer.writerow(row0)
-    csvdata.close()
+csvtarget = open('train_target.csv', 'w', encoding='utf-8-sig')
+row0 = ['Target']
+writer = csv.writer(csvtarget, delimiter=';', quotechar='"', lineterminator='\n', quoting=csv.QUOTE_NONNUMERIC)
+writer.writerow(row0)
+csvtarget.close()
 
 filenames = os.listdir('./texts')
+all_features = []
 
 for filename in filenames:
     if filename.endswith('.txt'):
@@ -125,22 +114,18 @@ for filename in filenames:
         rawtext = rawtext.replace('¬','')
         rawtext = PREP_delete_speakers(rawtext,delete_speakers)
         tokens = tokenizer.tokenize(rawtext)
-        annotated_tokens,target = annotate_tokens(tokens)
-        features = get_features(annotated_tokens,target)
+        annotated_tokens,target = annotate_tokens(tokens,filename)
+        features = get_features(annotated_tokens,target,context_window=CONTEXT_WINDOW)
+        all_features.append(features)
 
-        if razm == 'y':
-            csvdata = open('train_data.csv', 'a', encoding='utf-8-sig')
-        else:
-            csvdata = open('test_data.csv', 'a', encoding='utf-8-sig')
-        writer = csv.writer(csvdata, delimiter=';', quotechar='"', lineterminator='\n', quoting=csv.QUOTE_NONNUMERIC)
-        writer.writerows(annotated_tokens)
-        csvdata.close()
 
-        # если есть разметка, то формируется целевой вектор
-        if razm == 'y':
-            csvtarget = open('train_target.csv', 'a', encoding='utf-8-sig')
-            writer = csv.writer(csvtarget, delimiter=';', quotechar='"', lineterminator='\n', quoting=csv.QUOTE_NONNUMERIC)
-            for i in target:
-                row = [i]
-                writer.writerow(row)
-            csvtarget.close()
+        # формируется целевой вектор
+        csvtarget = open('train_target.csv', 'a', encoding='utf-8-sig')
+        writer = csv.writer(csvtarget, delimiter=';', quotechar='"', lineterminator='\n', quoting=csv.QUOTE_NONNUMERIC)
+        for i in target:
+            row = [i]
+            writer.writerow(row)
+        csvtarget.close()
+
+full_data = pd.concat(all_features,ignore_index=True)
+full_data.to_csv('train_data.csv')

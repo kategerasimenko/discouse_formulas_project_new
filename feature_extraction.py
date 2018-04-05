@@ -37,16 +37,16 @@ def make_column_names(feature_names, part_window):
     return result_names
 
 
-def get_features(tokens, target, context_window=(-5, 5)):
+def get_features(tokens, target, context_window):
     window = range(context_window[0], context_window[1] + 1)
     token_zero_index = window.index(0)
     window_left = window[0:token_zero_index]
     window_right = window[token_zero_index+1: len(window)]
-    left_names = ['left_token', 'left_token_lemma', 'left_token_pos', 'left_token_target']
+    left_names = ['Text', 'Lemma', 'POS', 'Target']
     left_columns = make_column_names(left_names, window_left)
-    right_names = ['right_token', 'right_token_lemma', 'right_token_pos']
+    right_names = ['Text', 'Lemma', 'POS']
     right_columns = make_column_names(right_names, window_right)
-    current_columns = ['current_token', 'current_token_lemma', 'current_token_pos', 'current_token_number']
+    current_columns = ['Text', 'Lemma', 'POS', 'Word_num', 'Text_id']
     result_df = pd.DataFrame(columns=left_columns+current_columns+right_columns)
     for i in range(len(tokens)):
         possible_window = get_possible_window(i, window, len(tokens))
@@ -67,5 +67,4 @@ def get_features(tokens, target, context_window=(-5, 5)):
             else:
                 right_features.extend([tokens[token_index][j] for j in range(0, 3)])
         result_df.loc[i] = left_features+current_features+right_features
-    result_df.to_csv('_'.join(['features_context', str(window[0]), str(window[-1])])+'.csv')
     return result_df
