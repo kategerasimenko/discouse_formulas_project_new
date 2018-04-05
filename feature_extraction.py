@@ -1,6 +1,8 @@
 import re
+import pandas as pd
 
-def PREP_delete_speakers(text,delete_speakers):
+
+def PREP_delete_speakers(text, delete_speakers):
     if delete_speakers == 'y':
         new_text = re.sub('\n *[А-ЯЁ ]+?(?: ?\(.+?\))? ?[.:]', '\n_SPEAKER_ ', text)
         if len(new_text) > len(text) - 500:
@@ -14,5 +16,56 @@ def PREP_delete_speakers(text,delete_speakers):
         new_text = text.replace('\n','\n_SPEAKER_ ')
     return new_text
 
-def get_features(tokens,target):
-    pass
+
+def get_possible_window(current_index, window, len_list):
+    if current_index + window[0] < 0:
+        start = 0
+    else:
+        start = current_index + window[0]
+    if current_index + window[-1]+1 > len_list:
+        finish = len_list
+    else:
+        finish = current_index+window[-1]+1
+    return range(start, finish)
+
+
+def make_column_names(feature_names, part_window):
+    result_names = []
+    for i in part_window:
+        for name in feature_names:
+            result_names.append('_'.join([name, str(i)]))
+    return result_names
+
+
+def get_features(tokens, target, context_window=(-5, 5)):
+    window = range(context_window[0], context_window[1] + 1)
+    token_zero_index = window.index(0)
+    window_left = window[0:token_zero_index]
+    window_right = window[token_zero_index+1: len(window)]
+    left_names = ['left_token', 'left_token_lemma', 'left_token_pos', 'left_token_target']
+    left_columns = make_column_names(left_names, window_left)
+    right_names = ['right_token', 'right_token_lemma', 'right_token_pos']
+    right_columns = make_column_names(right_names, window_right)
+    current_columns = ['current_token', 'current_token_lemma', 'current_token_pos', 'current_token_number']
+    result_df = pd.DataFrame(columns=left_columns+current_columns+right_columns)
+    for i in range(len(tokens)):
+        possible_window = get_possible_window(i, window, len(tokens))
+        left_features = []
+        right_features = []
+        current_features = list(tokens[i])
+        for n in window_left:
+            token_index = i + n
+            if token_index not in possible_window:
+                left_features.extend([None]*len(left_names))
+            else:
+                left_features.extend([tokens[token_index][j] for j in range(0, 3)])
+                left_features.append(target[i])
+        for n in window_right:
+            token_index = i + n
+            if token_index not in possible_window:
+                right_features.extend([None]*len(right_names))
+            else:
+                right_features.extend([tokens[token_index][j] for j in range(0, 3)])
+        result_df.loc[i] = left_features+current_features+right_features
+    result_df.to_csv('_'.join(['features_context', str(window[0]), str(window[-1])])+'.csv')
+    return result_df
