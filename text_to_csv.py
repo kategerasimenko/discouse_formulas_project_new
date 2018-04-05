@@ -60,11 +60,11 @@ def annotate_tokens(tokens):
         elif token == '_SPEAKER_':
             word_num = 1
             continue
-        token_ana = morph.parse(token.lower())[0].tag
-        token_pos = token_ana.POS
+        token_ana = morph.parse(token.lower())[0]
+        token_pos = token_ana.tag.POS
         if not token_pos:
-            token_pos = str(token_ana).split(',')[0]
-        annotated_tokens.append((token.lower(),token_pos,word_num))
+            token_pos = str(token_ana.tag).split(',')[0]
+        annotated_tokens.append((token.lower(),token_ana.normal_form,token_pos,word_num))
         word_num += 1
         if formula:
             if not formula_length:
