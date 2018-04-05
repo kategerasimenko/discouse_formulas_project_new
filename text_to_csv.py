@@ -1,6 +1,7 @@
 from feature_extraction import *
 from nltk.tokenize.treebank import TreebankWordTokenizer
 from nltk.tokenize import sent_tokenize
+import pymorphy2
 import html
 import csv
 import re
@@ -59,8 +60,11 @@ def annotate_tokens(tokens):
         elif token == '_SPEAKER_':
             word_num = 1
             continue
-        token_pos = morph.parse(token.lower())[0].tag.POS
-        annotated_tokens.append((token,token_pos,word_num))
+        token_ana = morph.parse(token.lower())[0].tag
+        token_pos = token_ana.POS
+        if not token_pos:
+            token_pos = str(token_ana).split(',')[0]
+        annotated_tokens.append((token.lower(),token_pos,word_num))
         word_num += 1
         if formula:
             if not formula_length:
@@ -77,7 +81,6 @@ def annotate_tokens(tokens):
 
 tokenizer = CustomizedTreebankWordTokenizer()
 morph = pymorphy2.MorphAnalyzer()
-print(tokenizer.tokenize('Почти что ничего. На работе я ничего не боюсь никому ничего сказать. Я говорю, все молчат, в том числе мой на¬чальник,'))
 
 razm = input('Are files annotated? [y/n]')
 delete_speakers = input('Delete speakers? [y/n]')

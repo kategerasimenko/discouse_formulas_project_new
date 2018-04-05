@@ -1,6 +1,4 @@
 import re
-import pymorphy2
-morph = pymorphy2.MorphAnalyzer()
 
 def PREP_delete_speakers(text,delete_speakers):
     if delete_speakers == 'y':
