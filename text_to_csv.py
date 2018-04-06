@@ -1,6 +1,7 @@
 from feature_extraction import *
 from nltk.tokenize.treebank import TreebankWordTokenizer
 from nltk.tokenize import sent_tokenize
+from time import time
 import pandas as pd
 import pymorphy2
 import html
@@ -98,6 +99,7 @@ csvtarget.close()
 filenames = os.listdir('./texts')
 all_features = []
 
+start = time()
 for filename in filenames:
     if filename.endswith('.txt'):
         try:
@@ -117,14 +119,13 @@ for filename in filenames:
         features = get_features(annotated_tokens,target,context_window=CONTEXT_WINDOW)
         all_features.append(features)
 
-
         # формируется целевой вектор
         csvtarget = open('train_target.csv', 'a', encoding='utf-8-sig')
         writer = csv.writer(csvtarget, delimiter=';', quotechar='"', lineterminator='\n', quoting=csv.QUOTE_NONNUMERIC)
-        for i in target:
-            row = [i]
-            writer.writerow(row)
+        writer.writerows(target)
         csvtarget.close()
 
 full_data = pd.concat(all_features,ignore_index=True)
-full_data.to_csv('train_data.csv',encoding='utf-8-sig')
+full_data.to_csv('train_data.csv',encoding='utf-8-sig',sep=';')
+
+print(time()-start)

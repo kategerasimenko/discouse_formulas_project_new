@@ -47,7 +47,8 @@ def get_features(tokens, target, context_window):
     right_names = ['Text', 'Lemma', 'POS']
     right_columns = make_column_names(right_names, window_right)
     current_columns = ['Text', 'Lemma', 'POS', 'Word_num', 'Text_id']
-    result_df = pd.DataFrame(columns=left_columns+current_columns+right_columns)
+    all_columns = left_columns+current_columns+right_columns
+    all_feats = []
     for i in range(len(tokens)):
         possible_window = get_possible_window(i, window, len(tokens))
         left_features = []
@@ -59,12 +60,13 @@ def get_features(tokens, target, context_window):
                 left_features.extend([None]*len(left_names))
             else:
                 left_features.extend([tokens[token_index][j] for j in range(0, 3)])
-                left_features.append(target[i])
+                left_features.append(target[i + n])
         for n in window_right:
             token_index = i + n
             if token_index not in possible_window:
                 right_features.extend([None]*len(right_names))
             else:
                 right_features.extend([tokens[token_index][j] for j in range(0, 3)])
-        result_df.loc[i] = left_features+current_features+right_features
+        all_feats.append(left_features+current_features+right_features)
+    result_df = pd.DataFrame(all_feats,columns=all_columns)
     return result_df
